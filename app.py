@@ -1,8 +1,8 @@
-
 from flask import Flask, render_template, request, redirect, url_for, session
 import firebase_admin
 from firebase_admin import credentials, auth, firestore, storage
 import os
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"
@@ -32,12 +32,16 @@ def signup_post():
     password = request.form['password']
 
     try:
-        # Create user in Firebase Authentication
-        user = auth.create_user(email=email, password=password)
+        user = auth.get_user_by_email(email)
         session['user_id'] = user.uid
         return redirect(url_for('dashboard'))
-    except Exception as e:
-        return f"Error creating account: {str(e)}"
+    except firebase_admin.auth.AuthError:
+        try:
+            new_user = auth.create_user(email=email, password=password)
+            session['user_id'] = new_user.uid
+            return redirect(url_for('dashboard'))
+        except Exception as e:
+            return f"Error creating account: {str(e)}"
 
 # User login page
 @app.route('/login')
@@ -51,7 +55,6 @@ def login():
     password = request.form['password']
 
     try:
-        # Firebase Authentication to verify the user
         user = auth.get_user_by_email(email)
         session['user_id'] = user.uid
         return redirect(url_for('dashboard'))
@@ -65,10 +68,39 @@ def dashboard():
         return redirect(url_for('index'))
 
     user_id = session['user_id']
+    
+    # Fetch expenses and income
     expenses_ref = db.collection('expenses').where('user_id', '==', user_id)
-    expenses = [{**doc.to_dict(), 'id': doc.id} for doc in expenses_ref.stream()]
+    income_ref = db.collection('income').where('user_id', '==', user_id)
 
-    return render_template('dashboard.html', expenses=expenses)
+    expenses = [{**doc.to_dict(), 'id': doc.id} for doc in expenses_ref.stream()]
+    income = sum([doc.to_dict().get('amount', 0) for doc in income_ref.stream()])
+    
+    total_expenses = sum([float(expense['amount']) for expense in expenses])
+    balance = income - total_expenses
+
+    return render_template('dashboard.html', expenses=expenses, balance=balance, income=income, total_expenses=total_expenses)
+
+# Add income
+@app.route('/add_income', methods=['POST'])
+def add_income():
+    if 'user_id' not in session:
+        return redirect(url_for('index'))
+
+    user_id = session['user_id']
+    amount = request.form['amount']
+    source = request.form['source']
+    date = request.form['date']  # Format: yyyy-mm-dd
+
+    # Store income data in Firestore
+    db.collection('income').add({
+        'user_id': user_id,
+        'amount': float(amount),
+        'source': source,
+        'date': datetime.strptime(date, '%Y-%m-%d').strftime('%d-%m-%Y')
+    })
+
+    return redirect(url_for('dashboard'))
 
 @app.route('/add_expense', methods=['POST'])
 def add_expense():
@@ -79,14 +111,12 @@ def add_expense():
     amount = request.form['amount']
     category = request.form['category']
     description = request.form['description']
+    date = request.form['date']  # Format: yyyy-mm-dd
     image = request.files['image']
 
     if image:
-        # Upload image to Firebase Storage
         blob = bucket.blob(f'images/{image.filename}')
         blob.upload_from_file(image)
-
-        # Make the file publicly accessible
         blob.make_public()
         image_url = blob.public_url
     else:
@@ -95,9 +125,10 @@ def add_expense():
     # Store expense data in Firestore
     db.collection('expenses').add({
         'user_id': user_id,
-        'amount': amount,
+        'amount': float(amount),
         'category': category,
         'description': description,
+        'date': datetime.strptime(date, '%Y-%m-%d').strftime('%d-%m-%Y'),
         'image_url': image_url
     })
 
@@ -172,4 +203,4 @@ def logout():
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=8080)

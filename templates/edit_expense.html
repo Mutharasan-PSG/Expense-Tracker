@@ -9,70 +9,118 @@
         /* Global Styles */
         body {
             font-family: 'Arial', sans-serif;
-            background-color: #f4f6f9;
+            background-color: #f0f2f5;
             display: flex;
             justify-content: center;
             align-items: center;
             flex-direction: column;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            padding: 20px;
         }
 
         h1 {
-            color: #2c3e50;
-            font-size: 28px;
-            margin-bottom: 20px;
+            color: #34495e;
+            font-size: 32px;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
         /* Form Styling */
         form {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            max-width: 400px;
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            max-width: 450px;
             width: 100%;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        form:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
         }
 
         label {
             display: block;
-            margin: 15px 0 5px;
-            font-size: 16px;
+            margin-bottom: 8px;
+            font-size: 14px;
             color: #2c3e50;
+            font-weight: bold;
+            letter-spacing: 0.5px;
         }
 
-        input[type="text"], textarea {
+        input[type="text"],
+        textarea {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+            padding: 12px;
+            border: 1px solid #dcdde1;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 15px;
+            color: #333;
+            background-color: #f9fafb;
             box-sizing: border-box;
-            margin-bottom: 15px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 8px rgba(52, 152, 219, 0.2);
+            outline: none;
         }
 
         textarea {
             resize: vertical;
+            min-height: 80px;
         }
 
         input[type="file"] {
-            margin-top: 10px;
-            margin-bottom: 20px;
+            margin-top: 5px;
+            font-size: 14px;
         }
 
         /* Button Styling */
         button {
             background-color: #3498db;
-            color: white;
-            padding: 10px 20px;
+            color: #fff;
+            padding: 12px 18px;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease, transform 0.3s ease;
             width: 100%;
         }
 
         button:hover {
             background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 500px) {
+            h1 {
+                font-size: 28px;
+            }
+
+            form {
+                padding: 20px;
+            }
+
+            button {
+                font-size: 15px;
+                padding: 10px 15px;
+            }
         }
     </style>
 </head>
@@ -80,17 +128,17 @@
 <body>
     <h1>Edit Expense</h1>
     <form method="POST" action="{{ url_for('update_expense', expense_id=expense_id) }}" enctype="multipart/form-data">
-        <label>Amount</label>
-        <input type="text" name="amount" value="{{ expense.amount }}" required>
+        <label for="amount">Amount</label>
+        <input type="text" id="amount" name="amount" value="{{ expense.amount }}" required>
 
-        <label>Category</label>
-        <input type="text" name="category" value="{{ expense.category }}" required>
+        <label for="category">Category</label>
+        <input type="text" id="category" name="category" value="{{ expense.category }}" required>
 
-        <label>Description</label>
-        <textarea name="description" required>{{ expense.description }}</textarea>
+        <label for="description">Description</label>
+        <textarea id="description" name="description" required>{{ expense.description }}</textarea>
 
-        <label>Upload new file (optional)</label>
-        <input type="file" name="image">
+        <label for="image">Upload New File (Optional)</label>
+        <input type="file" id="image" name="image">
 
         <button type="submit">Update Expense</button>
     </form>
